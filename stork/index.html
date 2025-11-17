@@ -206,7 +206,8 @@ function gameOver(){
   finalScoreEl.innerText=score;
   if(images.cry) gameOverCharImg.src=images.cry.src;
   playGameOverSound();
-  const txt=encodeURIComponent(`I scored ${score} in @Stork Oracle Run! ⚡⚡`);
+  const txt=encodeURIComponent(`I scored ${score} in @StorkOracle Run! ⚡⚡
+  https://stork-game.vercel.app/`);
   shareLink.href=`https://twitter.com/intent/tweet?text=${txt}`;
   gameOverScreen.classList.remove('hidden');
 }
