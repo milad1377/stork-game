@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stork Oracle Run</title>
+<title>Stork Oracle Run - Multiplayer</title>
 <style>
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;font-family:Segoe UI,Tahoma,sans-serif;color:#fff;background:#050505;overflow:hidden;}
@@ -19,12 +19,13 @@ html,body{height:100%;margin:0;font-family:Segoe UI,Tahoma,sans-serif;color:#fff
 }
 canvas{display:block;width:100%;height:100%;}
 #ui-layer{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;z-index:20;pointer-events:none;}
-.hud-box{background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:18px;}
-#start-screen,#game-over-screen{position:absolute;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(4px);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
+.hud-box{background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:18px;pointer-events:auto;} /* Added pointer-events:auto to HUD boxes */
+#start-screen,#game-over-screen,#lobby-screen{position:absolute;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(4px);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
 #logo{width:120px;margin-bottom:12px;}
 h1{color:#00ff9d;margin:0 0 10px;font-size:28px;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 12px #00ff9d;}
 .instructions{background:rgba(255,255,255,0.04);padding:12px;border-radius:8px;color:#ccc;line-height:1.6;margin-bottom:18px;}
-button{background:linear-gradient(45deg,#00ff9d,#00cc7e);border:none;padding:12px 28px;border-radius:36px;font-weight:700;cursor:pointer;}
+button{background:linear-gradient(45deg,#00ff9d,#00cc7e);border:none;padding:12px 28px;border-radius:36px;font-weight:700;cursor:pointer;transition:transform 0.1s;}
+button:active{transform:scale(0.95);}
 .x-btn{background:#000;color:#fff;border:1px solid #333;padding:10px 18px;border-radius:36px;}
 #game-over-character{width:160px;margin-bottom:10px;}
 .hidden{display:none!important;}
@@ -33,6 +34,24 @@ button{background:linear-gradient(45deg,#00ff9d,#00cc7e);border:none;padding:12p
 .mobile-btn{width:120px;height:80px;background:#00ff9d;opacity:0.35;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;user-select:none;}
 @media (min-width:768px){.mobile-controls{display:none;}}
 #made-by{position:absolute;bottom:5px;width:100%;text-align:center;font-size:12px;color:rgba(255,255,255,0.5);}
+
+/* New Lobby/Leaderboard Styles */
+#lobby-screen .panel, #game-over-screen .panel-lb {
+    background: rgba(255,255,255,0.05); padding:25px; border-radius:24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 100%; max-width: 350px;
+}
+.full-btn { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; margin-top: 5px; }
+input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; margin-bottom: 10px; text-align: center; }
+.player-list { list-style: none; padding: 0; margin: 10px 0; max-height: 150px; overflow-y: auto; text-align: left; width: 100%; }
+.player-list li { background: rgba(255,255,255,0.1); padding: 8px; margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; font-size: 14px;}
+.is-host { color: #ffd700; font-size: 12px; }
+.copy-box { background: #1e293b; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 12px; cursor: pointer; word-break: break-all; margin-bottom: 10px; width: 100%;}
+.final-lb { width: 100%; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; max-height: 200px; overflow-y: auto;}
+.final-lb-row { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center;}
+.rank-medal { font-size: 18px; margin-right: 5px; }
+.rank-text { color: #94a3b8; margin-right: 5px; font-weight: bold;}
+.player-status-dead { color: #ff4d4d; font-size: 11px; margin-left: 10px; }
+.player-status-playing { color: #00ff9d; font-size: 11px; margin-left: 10px; }
+.lb-score { color: #00ff9d; font-weight: bold;}
 
 /* موبایل ارتفاع کمتر برای دکمه‌ها */
 @media (max-width:767px){
@@ -50,19 +69,45 @@ button{background:linear-gradient(45deg,#00ff9d,#00cc7e);border:none;padding:12p
 
   <div id="start-screen">
     <img id="logo" src="logo.png" alt="logo">
-    <h1>STORK ORACLE</h1>
+    <h1>STORK ORACLE RUN</h1>
+    <input type="text" id="playerNameInput" placeholder="Enter Your Nickname" maxlength="12">
     <div class="instructions">⚡ Collect Data — ⛽ Avoid Gas Fees — 🛡️ Shields — 🧲 Magnets!</div>
-    <button id="start-btn">START GAME</button>
+    <button id="start-solo-btn" class="full-btn" style="margin-top:0;">START SOLO</button>
+    <button id="start-multi-btn" class="full-btn" style="background:linear-gradient(45deg,#3498db,#2980b9);">PLAY WITH FRIENDS</button>
   </div>
-
+  
+  <div id="lobby-screen" class="hidden">
+    <div class="panel">
+        <h2>Game Lobby</h2>
+        <p>Send this link to your friends:</p>
+        <div class="copy-box" id="shareLink" onclick="copyLink()">Generating Link...</div>
+        <ul class="player-list" id="lobbyPlayerList"></ul>
+        <div id="hostControls" class="hidden">
+            <button id="hostStartBtn" class="full-btn" style="background:#00ff9d; color:#000;">Start Match</button>
+        </div>
+        <div id="clientStatus" class="hidden">
+            <p style="color:#00ff9d">Waiting for host to start...</p>
+        </div>
+        <button onclick="leaveLobby()" class="x-btn full-btn" style="margin-top:10px;">Cancel / Leave</button>
+    </div>
+  </div>
+  
   <div id="game-over-screen" class="hidden">
-    <img id="game-over-character" src="cry.png" alt="cry">
-    <h1 style="color:#ff4d4d">Game Over</h1>
-    <p style="font-size:18px">Final Score: <span id="final-score">0</span></p>
-    <button id="try-btn">TRY AGAIN</button>
-    <a id="share-link" target="_blank" style="margin-top:12px;text-decoration:none">
-      <button class="x-btn">Share on X</button>
-    </a>
+    <div class="panel-lb">
+      <img id="game-over-character" src="cry.png" alt="cry">
+      <h1 id="gameOverTitle" style="color:#ff4d4d; margin-bottom: 5px;">Game Over</h1>
+      <p style="font-size:18px">Final Score: <span id="final-score">0</span></p>
+
+      <div id="multiplayerResults" class="hidden">
+        <h3 style="color:#00ff9d; margin: 10px 0;">Leaderboard</h3>
+        <div class="final-lb" id="finalLeaderboard"></div>
+      </div>
+      
+      <button id="try-btn" style="margin-top: 15px;">PLAY AGAIN / MAIN MENU</button>
+      <a id="share-link" target="_blank" style="margin-top:12px;text-decoration:none">
+        <button class="x-btn">Share Score</button>
+      </a>
+    </div>
     <div id="made-by">Made by milad1377</div>
   </div>
 
@@ -75,24 +120,72 @@ button{background:linear-gradient(45deg,#00ff9d,#00cc7e);border:none;padding:12p
   </div>
 </div>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+  
+  // NOTE: Using a hardcoded older Firebase SDK URL for simplicity, but using the config you provided.
+  const firebaseConfig = {
+    apiKey: "AIzaSyDe_8L3NgLPfCPh7BwpNjoU_O8xUPAHiPA",
+    authDomain: "stork-oracle-run.firebaseapp.com",
+    projectId: "stork-oracle-run",
+    storageBucket: "stork-oracle-run.firebasestorage.app",
+    messagingSenderId: "804704980500",
+    appId: "1:804704980500:web:a145d1b28300ec9aae6101",
+    measurementId: "G-BM0XKFFZ8H"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  
+  window.db = db;
+  window.dbRef = ref;
+  window.dbSet = set;
+  window.dbUpdate = update;
+  window.dbRemove = remove;
+  window.dbOnValue = onValue;
+  window.dbGet = get; // Added get for duplicate name checking
+</script>
+
 <script>
 const canvas=document.getElementById('gameCanvas');
 const scoreEl=document.getElementById('score-board');
 const healthEl=document.getElementById('health-board');
 const shieldTimerEl=document.getElementById('shield-timer');
 const startScreen=document.getElementById('start-screen');
+const lobbyScreen=document.getElementById('lobby-screen'); // NEW
 const gameOverScreen=document.getElementById('game-over-screen');
 const finalScoreEl=document.getElementById('final-score');
-const startBtn=document.getElementById('start-btn');
+const startSoloBtn=document.getElementById('start-solo-btn'); // Renamed
+const startMultiBtn=document.getElementById('start-multi-btn'); // Renamed
+const hostStartBtn=document.getElementById('hostStartBtn'); // NEW
 const tryBtn=document.getElementById('try-btn');
 const shareLink=document.getElementById('share-link');
 const gameOverCharImg=document.getElementById('game-over-character');
 const leftBtn=document.getElementById('left-btn');
 const rightBtn=document.getElementById('right-btn');
+const playerNameInput=document.getElementById('playerNameInput');
 
 let ctx, images={}, gameRunning=false, score=0, health=3, frames=0, difficultyFactor=1, items=[];
 let moveLeft=false, moveRight=false;
 const player={x:0,y:0,width:80,height:100,speed:7,hasShield:false,shieldTimer:0,magnetTimer:0,facingRight:true};
+
+// Multiplayer Variables
+let isMultiplayer = false;
+let roomId = null;
+let playerId = null;
+let playerName = "Player";
+let isHost = false;
+let joiningInProgress = false; 
+
+// Check URL for joining a room
+const urlParams = new URLSearchParams(window.location.search);
+if(urlParams.get('room')){
+    roomId = urlParams.get('room');
+    startSoloBtn.classList.add('hidden');
+    startMultiBtn.innerText = 'Join Lobby';
+}
+
 
 /* Audio */
 const AudioContextClass=window.AudioContext||window.webkitAudioContext;
@@ -106,6 +199,7 @@ function playBeep(freq,dur=0.1,vol=0.2){
   osc.start(); osc.stop(audioCtx.currentTime+dur);
 }
 function playGameOverSound(){playBeep(120,0.5,0.3); playBeep(100,0.3,0.2);}
+
 
 /* Canvas */
 function setupCanvasDPR(){
@@ -192,12 +286,22 @@ function updateHealthDisplay(){
 /* Init Game */
 function initGame(){
   score=0; health=3; frames=0; items=[]; difficultyFactor=1;
+  
+  // Hide UI screens
+  startScreen.classList.add('hidden');
+  lobbyScreen.classList.add('hidden');
+  gameOverScreen.classList.add('hidden');
+
   player.width=Math.min(120,canvas.clientWidth*0.18);
   player.height=player.width*1.1;
   player.x=(canvas.clientWidth-player.width)/2;
   player.y=canvas.clientHeight-player.height-40;
   player.hasShield=false; player.shieldTimer=0; player.magnetTimer=0; player.facingRight=true;
+  
   scoreEl.innerText=`Data: ${score}`; updateHealthDisplay(); shieldTimerEl.innerText='Shield: 0.0s';
+  
+  gameRunning=true;
+  requestAnimationFrame(gameLoop);
 }
 
 /* Game Over */
@@ -206,9 +310,27 @@ function gameOver(){
   finalScoreEl.innerText=score;
   if(images.cry) gameOverCharImg.src=images.cry.src;
   playGameOverSound();
-  const txt=encodeURIComponent(`I scored ${score} in @StorkOracle Run! ⚡⚡
-  https://stork-oracle-run.vercel.app/`);
-  shareLink.href=`https://x.com/intent/tweet?text=${txt}`;
+
+  // Handle Multiplayer vs Solo Game Over
+  if(isMultiplayer){
+      document.getElementById('gameOverTitle').innerText = "Run Ended";
+      document.getElementById('multiplayerResults').classList.remove('hidden');
+      
+      // Update final score and status in Firebase
+      if(window.dbUpdate && roomId && playerId){
+          window.dbUpdate(window.dbRef(window.db, `rooms/${roomId}/players/${playerId}`), {
+              score: score,
+              isDead: true 
+          });
+      }
+      fetchLeaderboard(); // Start listening for leaderboard updates
+  } else {
+      document.getElementById('gameOverTitle').innerText = "Game Over";
+      document.getElementById('multiplayerResults').classList.add('hidden');
+  }
+
+  const txt=encodeURIComponent(`I scored ${score} Data in @StorkOracle Run! ⚡⚡`);
+  shareLink.href=`https://x.com/intent/tweet?text=${txt}&url=${window.location.origin + window.location.pathname}`;
   gameOverScreen.classList.remove('hidden');
 }
 
@@ -224,20 +346,20 @@ function gameLoop(){
 
   if(frames%(Math.max(20,48-Math.floor(difficultyFactor*5)))===0) items.push(new Item());
 
-  if(moveLeft&&player.x>0){player.x-=player.speed; player.facingRight=true;}
-  if(moveRight&&player.x<canvas.clientWidth-player.width){player.x+=player.speed; player.facingRight=false;}
+  if(moveLeft&&player.x>0){player.x-=player.speed; player.facingRight=false;}
+  if(moveRight&&player.x<canvas.clientWidth-player.width){player.x+=player.speed; player.facingRight=true;}
 
   if(player.hasShield){
     player.shieldTimer--;
-    shieldTimerEl.innerText=(player.shieldTimer/60).toFixed(1)+'s';
-    if(player.shieldTimer<=0){player.hasShield=false; shieldTimerEl.innerText='0.0s';}
+    shieldTimerEl.innerText='Shield: '+(player.shieldTimer/60).toFixed(1)+'s';
+    if(player.shieldTimer<=0){player.hasShield=false; shieldTimerEl.innerText='Shield: 0.0s';}
   }
 
   if(player.magnetTimer>0){
     player.magnetTimer--;
     const magnetRange=450; const magnetPower=0.12; const curveAmplitude=8; const wobbleSpeed=0.16;
     for(let it of items){
-      if(it.type==='good'||it.type==='shield'){
+      if(it.type==='good'||it.type==='shield'){ // Magnet only attracts good/shield items
         const dx=player.x+player.width/2-it.x; const dy=player.y+player.height/2-it.y;
         const dist=Math.sqrt(dx*dx+dy*dy);
         if(dist<magnetRange){
@@ -255,11 +377,28 @@ function gameLoop(){
   for(let i=0;i<items.length;i++){
     const it=items[i]; it.update(); it.draw(ctx);
     if(player.x<it.x+it.size && player.x+player.width>it.x && player.y<it.y+it.size && player.y+player.height>it.y){
-      if(it.type==='good'){score+=10; playBeep(880);}
-      else if(it.type==='shield'){player.hasShield=true; player.shieldTimer=210; playBeep(440);}
-      else if(it.type==='magnet'){player.magnetTimer=520; playBeep(660);}
-      else {if(!player.hasShield){health--; updateHealthDisplay(); playBeep(220); if(health<=0){items.splice(i,1); return gameOver();}}}
-      items.splice(i,1); i--; continue;
+      let collected = false;
+      if(it.type==='good'){score+=10; playBeep(880); collected=true;}
+      else if(it.type==='shield'){player.hasShield=true; player.shieldTimer=210; playBeep(440); collected=true;}
+      else if(it.type==='magnet'){player.magnetTimer=520; playBeep(660); collected=true;}
+      else { // Bad item (Gas Fee)
+        if(!player.hasShield){
+          health--; updateHealthDisplay(); playBeep(220); 
+          if(health<=0){items.splice(i,1); return gameOver();}
+          collected=true;
+        } else {
+            // Shield blocks the hit, but removes the shield
+            player.hasShield = false;
+            player.shieldTimer = 0;
+            shieldTimerEl.innerText='Shield: 0.0s';
+            playBeep(330);
+            collected=true;
+        }
+      }
+      
+      if(collected) {
+        items.splice(i,1); i--; continue;
+      }
     }
     if(it.y>canvas.clientHeight+50){items.splice(i,1); i--;}
   }
@@ -267,8 +406,216 @@ function gameLoop(){
   drawPlayer();
   frames++; difficultyFactor+=0.0002;
   scoreEl.innerText=`Data: ${score}`;
+  if(isMultiplayer && frames % 60 === 0) syncScore(); // Sync score every second
   requestAnimationFrame(gameLoop);
 }
+
+// --- Multiplayer Logic Functions ---
+
+function getPlayerName(){
+    let name = playerNameInput.value.trim();
+    if(!name) name = "Runner_" + Math.floor(Math.random()*1000);
+    return name;
+}
+
+async function createLobby(){
+    if(joiningInProgress || !window.db) return;
+    joiningInProgress = true;
+    
+    const btn = startMultiBtn;
+    if(btn) { btn.disabled = true; btn.innerText = "Creating..."; }
+    
+    playerName = getPlayerName();
+    playerId = 'host_' + Date.now();
+    roomId = 'room_' + Math.floor(Math.random()*10000);
+    isHost = true;
+    isMultiplayer = true;
+
+    const roomRef = window.dbRef(window.db, `runs/${roomId}`);
+    await window.dbSet(roomRef, {
+        status: 'lobby',
+        players: {
+            [playerId]: { name: playerName, score: 0, isHost: true, isDead: false }
+        }
+    });
+    
+    showLobbyUI();
+    listenToLobby();
+    joiningInProgress = false;
+}
+
+async function joinLobby(){
+    if(joiningInProgress || !window.db) return;
+    joiningInProgress = true;
+
+    const btn = startMultiBtn;
+    if(btn) { btn.disabled = true; btn.innerText = "Joining..."; }
+    
+    playerName = getPlayerName();
+
+    // Check Duplicate Name Logic (Same as previous game)
+    try {
+        const roomPlayersRef = window.dbRef(window.db, `runs/${roomId}/players`);
+        const snapshot = await window.dbGet(roomPlayersRef);
+
+        if (snapshot.exists()) {
+            const players = snapshot.val();
+            const isNameTaken = Object.values(players).some(p => p.name.toLowerCase() === playerName.toLowerCase());
+
+            if (isNameTaken) {
+                alert("این نام کاربری قبلاً در این اتاق استفاده شده است. لطفاً نام دیگری انتخاب کنید.");
+                joiningInProgress = false;
+                if(btn) { btn.disabled = false; btn.innerText = "Join Lobby"; }
+                return;
+            }
+        }
+    } catch (error) {
+        console.error("Error checking names:", error);
+    }
+    
+    playerId = 'p_' + Date.now();
+    isHost = false;
+    isMultiplayer = true;
+
+    const playerRef = window.dbRef(window.db, `runs/${roomId}/players/${playerId}`);
+    await window.dbSet(playerRef, {
+        name: playerName,
+        score: 0,
+        isHost: false,
+        isDead: false
+    });
+    
+    showLobbyUI();
+    listenToLobby();
+    joiningInProgress = false;
+}
+
+function showLobbyUI(){
+    startScreen.classList.add('hidden');
+    lobbyScreen.classList.remove('hidden');
+    document.getElementById('shareLink').innerText = window.location.origin + window.location.pathname + '?room=' + roomId;
+    
+    if(isHost){
+        document.getElementById('hostControls').classList.remove('hidden');
+        document.getElementById('clientStatus').classList.add('hidden');
+    } else {
+        document.getElementById('hostControls').classList.add('hidden');
+        document.getElementById('clientStatus').classList.remove('hidden');
+    }
+}
+
+function listenToLobby(){
+    const roomRef = window.dbRef(window.db, `runs/${roomId}`);
+    window.dbOnValue(roomRef, (snapshot) => {
+        const data = snapshot.val();
+        if(!data) {
+            if(!gameOverScreen.classList.contains('hidden')){ /* Allow clean exit after game over */ }
+            else { alert("Room closed by host"); location.href = window.location.pathname; }
+            return;
+        }
+        const list = document.getElementById('lobbyPlayerList');
+        list.innerHTML = '';
+        if(data.players){
+            Object.values(data.players).forEach(p => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${p.name}</span> ${p.isHost ? '<span class="is-host">HOST</span>' : ''}`;
+                list.appendChild(li);
+            });
+        }
+        // Start game if host changes status
+        if(data.status === 'playing' && !gameRunning && health > 0){
+            initGame();
+        }
+    });
+}
+
+function startMultiplayerGame(){
+    if(!isHost) return;
+    window.dbUpdate(window.dbRef(window.db, `runs/${roomId}`), { status: 'playing' });
+}
+
+function syncScore(){
+    if(!isMultiplayer || !roomId || !playerId || !window.dbUpdate) return;
+    window.dbUpdate(window.dbRef(window.db, `runs/${roomId}/players/${playerId}`), { score: score });
+}
+
+function fetchLeaderboard(){
+    const playersRef = window.dbRef(window.db, `runs/${roomId}/players`);
+    // Listen for score/status updates even after game ends
+    window.dbOnValue(playersRef, (snapshot) => {
+        const players = snapshot.val();
+        const lb = document.getElementById('finalLeaderboard');
+        lb.innerHTML = '';
+        if(!players) return;
+        
+        // Sort by score (highest first)
+        const sorted = Object.values(players).sort((a,b) => b.score - a.score);
+        
+        sorted.forEach((p, index) => {
+            const div = document.createElement('div');
+            div.className = 'final-lb-row';
+            
+            let rankDisplay = '';
+            if(index === 0) rankDisplay = '<span class="rank-medal" style="color:#ffd700">🥇</span>';
+            else if(index === 1) rankDisplay = '<span class="rank-medal" style="color:#c0c0c0">🥈</span>';
+            else if(index === 2) rankDisplay = '<span class="rank-medal" style="color:#cd7f32">🥉</span>';
+            else rankDisplay = `<span class="rank-text">#${index+1}</span>`;
+
+            let statusText = '';
+            if (p.isDead) {
+                statusText = '<span class="player-status-dead">Finished</span>';
+            } else {
+                statusText = '<span class="player-status-playing">Running...</span>';
+            }
+            
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    ${rankDisplay} 
+                    <span>${p.name}</span>
+                    ${statusText} 
+                </div>
+                <span class="lb-score">${p.score}</span>
+            `;
+            lb.appendChild(div);
+        });
+    });
+}
+
+window.copyLink = function(){
+    const link = document.getElementById('shareLink').innerText;
+    navigator.clipboard.writeText(link).then(() => alert("Link copied!"));
+}
+
+window.leaveLobby = function(){
+    if(isHost && roomId && window.db){
+         // Host clears the room upon leaving the lobby
+         window.dbRemove(window.dbRef(window.db, `runs/${roomId}`));
+    }
+    location.href = window.location.pathname; // Reload to main menu
+}
+
+// --- Event Listeners ---
+
+// Single Player Start
+startSoloBtn.onclick = () => { isMultiplayer=false; initGame(); };
+
+// Multiplayer Start / Join
+startMultiBtn.onclick = () => {
+    if(joiningInProgress) return;
+    if(roomId) joinLobby(); // Join existing room from URL
+    else createLobby(); // Create new room
+};
+
+// Host Starts Match
+hostStartBtn.onclick = startMultiplayerGame;
+
+// Try Again / Main Menu
+tryBtn.onclick = () => {
+    // If multiplayer, host should decide if the room should be cleared
+    // For simplicity, we just reload the page to go back to the main menu/start screen
+    location.href = window.location.pathname;
+};
+
 
 /* Preload images */
 function preloadImages(list){
@@ -292,8 +639,6 @@ const assetsToLoad=[
 preloadImages(assetsToLoad).then(imgs=>{
   images=imgs;
   if(images.logo) document.getElementById('logo').src=images.logo.src;
-  startBtn.addEventListener('click',()=>{initGame(); gameRunning=true; startScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden'); requestAnimationFrame(gameLoop);});
-  tryBtn.addEventListener('click',()=>{initGame(); gameRunning=true; startScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden'); requestAnimationFrame(gameLoop);});
 });
 </script>
 </body>
