@@ -67,9 +67,9 @@ input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1p
     <h1>STORK ORACLE RUN</h1>
     <div class="instructions">⚡ Collect Data — ⛽ Avoid Gas Fees — 🛡️ Shields — 🧲 Magnets!</div>
     
-    <button id="start-solo-btn" class="full-btn" style="margin-top:0;">START SOLO</button>
-    <input type="text" id="playerNameInput" placeholder="Enter Your Nickname" maxlength="12">
-    <button id="start-multi-btn" class="full-btn" style="background:linear-gradient(45deg,#3498db,#2980b9);">PLAY WITH FRIENDS</button>
+    <button id="start-solo-btn" class="full-btn" style="margin-top:0;">START SOLO GAME</button>
+    <input type="text" id="playerNameInput" placeholder="Enter Your Discord Username" maxlength="20">
+    <button id="start-multi-btn" class="full-btn" style="background:linear-gradient(45deg,#3498db,#2980b9);">CREATE MATCH</button>
   </div>
   
   <div id="lobby-screen" class="hidden">
@@ -99,7 +99,7 @@ input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1p
         <div class="final-lb" id="finalLeaderboard"></div>
       </div>
       
-      <button id="try-btn" style="margin-top: 15px;">PLAY AGAIN / MAIN MENU</button>
+      <button id="try-btn" style="margin-top: 15px;">MAIN MENU</button>
       <a id="share-link" target="_blank" style="margin-top:12px;text-decoration:none">
         <button class="x-btn">Share Score</button>
       </a>
@@ -415,7 +415,7 @@ async function createLobby(){
         console.error("Firebase Error:", error);
         alert("Error creating room. Check connection.");
         joiningInProgress = false;
-        if(btn) { btn.disabled = false; btn.innerText = "PLAY WITH FRIENDS"; }
+        if(btn) { btn.disabled = false; btn.innerText = "CREATE MATCH"; }
     }
 }
 
