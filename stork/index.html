@@ -58,7 +58,7 @@ input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1p
 <div id="game-container">
   <div id="ui-layer">
     <div id="score-board" class="hud-box">Data: 0</div>
-    <div id="health-board" class="hud-box">🥚 🥚 🥚</div>
+    <div id="health-board" class="hud-box">🥚 🥚 🥚 🥚 🥚</div>
     <div id="shield-timer" class="hud-box">Shield: 0.0s</div>
   </div>
 
@@ -163,7 +163,7 @@ const leftBtn=document.getElementById('left-btn');
 const rightBtn=document.getElementById('right-btn');
 const playerNameInput=document.getElementById('playerNameInput');
 
-let ctx, images={}, gameRunning=false, score=0, health=3, frames=0, difficultyFactor=1, items=[];
+let ctx, images={}, gameRunning=false, score=0, health=5, frames=0, difficultyFactor=1, items=[];
 let moveLeft=false, moveRight=false;
 const player={x:0,y:0,width:80,height:100,speed:7,hasShield:false,shieldTimer:0,magnetTimer:0,facingRight:true};
 
@@ -245,7 +245,7 @@ function drawPlayer(){
   const cy=player.y+player.height/2;
   ctx.translate(cx,cy);
   
-    if(player.facingRight) ctx.scale(-1,1);
+  if(player.facingRight) ctx.scale(-1,1); 
 
   if(player.magnetTimer>0){
     ctx.beginPath();
@@ -270,7 +270,7 @@ function updateHealthDisplay(){
 }
 
 function initGame(){
-  score=0; health=3; frames=0; items=[]; difficultyFactor=1;
+  score=0; health=5; frames=0; items=[]; difficultyFactor=1;
   startScreen.classList.add('hidden');
   lobbyScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
@@ -414,7 +414,7 @@ async function createLobby(){
         console.error("Firebase Error:", error);
         alert("Error creating room. Check connection.");
         joiningInProgress = false;
-        if(btn) { btn.disabled = false; btn.innerText = "CREATE MATCH"; }
+        if(btn) { btn.disabled = false; btn.innerText = "PLAY WITH FRIENDS"; }
     }
 }
 
@@ -432,7 +432,7 @@ async function joinLobby(){
             const players = snapshot.val();
             const isNameTaken = Object.values(players).some(p => p.name.toLowerCase() === playerName.toLowerCase());
             if (isNameTaken) {
-                alert("This username is taken!");
+                alert("This username is already taken!");
                 joiningInProgress = false;
                 if(btn) { btn.disabled = false; btn.innerText = "Join Lobby"; }
                 return;
