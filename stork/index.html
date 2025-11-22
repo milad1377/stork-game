@@ -246,7 +246,7 @@ function drawPlayer(){
   ctx.translate(cx,cy);
   
   // FIXED DIRECTION LOGIC
-  if(player.facingRight) ctx.scale(-1,1); 
+  if(!player.facingRight) ctx.scale(-1,1); 
 
   if(player.magnetTimer>0){
     ctx.beginPath();
