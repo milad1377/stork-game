@@ -243,8 +243,7 @@ function drawPlayer(){
   ctx.save();
   const cx=player.x+player.width/2;
   const cy=player.y+player.height/2;
-  ctx.translate(cy,cx);
-  if(!player.facingRight) ctx.scale(-1,1); 
+  ctx.translate(cx,cy);
 
   if(player.magnetTimer>0){
     ctx.beginPath();
