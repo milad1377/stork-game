@@ -19,13 +19,14 @@ html,body{height:100%;margin:0;font-family:Segoe UI,Tahoma,sans-serif;color:#fff
 }
 canvas{display:block;width:100%;height:100%;}
 #ui-layer{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;z-index:20;pointer-events:none;}
-.hud-box{background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:18px;pointer-events:auto;} /* Added pointer-events:auto to HUD boxes */
+.hud-box{background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:18px;pointer-events:auto;}
 #start-screen,#game-over-screen,#lobby-screen{position:absolute;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(4px);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
 #logo{width:120px;margin-bottom:12px;}
 h1{color:#00ff9d;margin:0 0 10px;font-size:28px;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 12px #00ff9d;}
 .instructions{background:rgba(255,255,255,0.04);padding:12px;border-radius:8px;color:#ccc;line-height:1.6;margin-bottom:18px;}
 button{background:linear-gradient(45deg,#00ff9d,#00cc7e);border:none;padding:12px 28px;border-radius:36px;font-weight:700;cursor:pointer;transition:transform 0.1s;}
 button:active{transform:scale(0.95);}
+button:disabled{background:#555;color:#888;cursor:not-allowed;transform:none;}
 .x-btn{background:#000;color:#fff;border:1px solid #333;padding:10px 18px;border-radius:36px;}
 #game-over-character{width:160px;margin-bottom:10px;}
 .hidden{display:none!important;}
@@ -35,7 +36,7 @@ button:active{transform:scale(0.95);}
 @media (min-width:768px){.mobile-controls{display:none;}}
 #made-by{position:absolute;bottom:5px;width:100%;text-align:center;font-size:12px;color:rgba(255,255,255,0.5);}
 
-/* New Lobby/Leaderboard Styles */
+/* Multiplayer UI Styles */
 #lobby-screen .panel, #game-over-screen .panel-lb {
     background: rgba(255,255,255,0.05); padding:25px; border-radius:24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 100%; max-width: 350px;
 }
@@ -48,15 +49,11 @@ input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1p
 .final-lb { width: 100%; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; max-height: 200px; overflow-y: auto;}
 .final-lb-row { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center;}
 .rank-medal { font-size: 18px; margin-right: 5px; }
-.rank-text { color: #94a3b8; margin-right: 5px; font-weight: bold;}
 .player-status-dead { color: #ff4d4d; font-size: 11px; margin-left: 10px; }
 .player-status-playing { color: #00ff9d; font-size: 11px; margin-left: 10px; }
 .lb-score { color: #00ff9d; font-weight: bold;}
 
-/* موبایل ارتفاع کمتر برای دکمه‌ها */
-@media (max-width:767px){
-  #game-container {height:77vh;}
-}
+@media (max-width:767px){ #game-container {height:77vh;} }
 </style>
 </head>
 <body>
@@ -124,10 +121,11 @@ input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1p
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
   import { getDatabase, ref, set, push, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
   
-  // NOTE: Using a hardcoded older Firebase SDK URL for simplicity, but using the config you provided.
+  // ✅ UPDATED CONFIG WITH DATABASE URL
   const firebaseConfig = {
     apiKey: "AIzaSyDe_8L3NgLPfCPh7BwpNjoU_O8xUPAHiPA",
     authDomain: "stork-oracle-run.firebaseapp.com",
+    databaseURL: "https://stork-oracle-run-default-rtdb.firebaseio.com",
     projectId: "stork-oracle-run",
     storageBucket: "stork-oracle-run.firebasestorage.app",
     messagingSenderId: "804704980500",
@@ -138,13 +136,14 @@ input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1p
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   
+  // Make Firebase functions available globally
   window.db = db;
   window.dbRef = ref;
   window.dbSet = set;
   window.dbUpdate = update;
   window.dbRemove = remove;
   window.dbOnValue = onValue;
-  window.dbGet = get; // Added get for duplicate name checking
+  window.dbGet = get; 
 </script>
 
 <script>
@@ -153,12 +152,12 @@ const scoreEl=document.getElementById('score-board');
 const healthEl=document.getElementById('health-board');
 const shieldTimerEl=document.getElementById('shield-timer');
 const startScreen=document.getElementById('start-screen');
-const lobbyScreen=document.getElementById('lobby-screen'); // NEW
+const lobbyScreen=document.getElementById('lobby-screen');
 const gameOverScreen=document.getElementById('game-over-screen');
 const finalScoreEl=document.getElementById('final-score');
-const startSoloBtn=document.getElementById('start-solo-btn'); // Renamed
-const startMultiBtn=document.getElementById('start-multi-btn'); // Renamed
-const hostStartBtn=document.getElementById('hostStartBtn'); // NEW
+const startSoloBtn=document.getElementById('start-solo-btn');
+const startMultiBtn=document.getElementById('start-multi-btn');
+const hostStartBtn=document.getElementById('hostStartBtn');
 const tryBtn=document.getElementById('try-btn');
 const shareLink=document.getElementById('share-link');
 const gameOverCharImg=document.getElementById('game-over-character');
@@ -170,7 +169,7 @@ let ctx, images={}, gameRunning=false, score=0, health=3, frames=0, difficultyFa
 let moveLeft=false, moveRight=false;
 const player={x:0,y:0,width:80,height:100,speed:7,hasShield:false,shieldTimer:0,magnetTimer:0,facingRight:true};
 
-// Multiplayer Variables
+// Multiplayer State
 let isMultiplayer = false;
 let roomId = null;
 let playerId = null;
@@ -178,14 +177,13 @@ let playerName = "Player";
 let isHost = false;
 let joiningInProgress = false; 
 
-// Check URL for joining a room
+// Check URL for room
 const urlParams = new URLSearchParams(window.location.search);
 if(urlParams.get('room')){
     roomId = urlParams.get('room');
     startSoloBtn.classList.add('hidden');
     startMultiBtn.innerText = 'Join Lobby';
 }
-
 
 /* Audio */
 const AudioContextClass=window.AudioContext||window.webkitAudioContext;
@@ -200,8 +198,7 @@ function playBeep(freq,dur=0.1,vol=0.2){
 }
 function playGameOverSound(){playBeep(120,0.5,0.3); playBeep(100,0.3,0.2);}
 
-
-/* Canvas */
+/* Canvas Setup */
 function setupCanvasDPR(){
   const dpr=window.devicePixelRatio||1;
   const rect=canvas.getBoundingClientRect();
@@ -215,7 +212,7 @@ function setupCanvasDPR(){
 setupCanvasDPR();
 window.addEventListener('resize',setupCanvasDPR);
 
-/* Controls */
+/* Input Handlers */
 window.addEventListener('keydown',e=>{
   if(['ArrowLeft','a','A'].includes(e.key)) moveLeft=true;
   if(['ArrowRight','d','D'].includes(e.key)) moveRight=true;
@@ -264,13 +261,11 @@ function drawPlayer(){
     ctx.arc(0,0,pulseRadius,0,Math.PI*2);
     ctx.strokeStyle='rgba(255,102,255,0.5)'; ctx.lineWidth=4; ctx.stroke();
   }
-
   if(player.hasShield){
     ctx.beginPath();
     ctx.arc(0,0,Math.max(player.width,player.height)*0.6,0,Math.PI*2);
     ctx.strokeStyle='rgba(0,255,200,0.7)'; ctx.lineWidth=4; ctx.stroke();
   }
-
   const animSpeed=10;
   const currentFrame=Math.floor(frames/animSpeed)%2;
   const spriteToDraw=(moveLeft||moveRight)?(currentFrame===0?images.player1:images.player2):images.player1;
@@ -278,16 +273,13 @@ function drawPlayer(){
   ctx.restore();
 }
 
-/* Health Display */
 function updateHealthDisplay(){
   let hearts=''; for(let i=0;i<health;i++) hearts+='🥚 '; healthEl.innerText=hearts.trim();
 }
 
-/* Init Game */
+/* Core Game Logic */
 function initGame(){
   score=0; health=3; frames=0; items=[]; difficultyFactor=1;
-  
-  // Hide UI screens
   startScreen.classList.add('hidden');
   lobbyScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
@@ -304,26 +296,22 @@ function initGame(){
   requestAnimationFrame(gameLoop);
 }
 
-/* Game Over */
 function gameOver(){
   gameRunning=false;
   finalScoreEl.innerText=score;
   if(images.cry) gameOverCharImg.src=images.cry.src;
   playGameOverSound();
 
-  // Handle Multiplayer vs Solo Game Over
   if(isMultiplayer){
       document.getElementById('gameOverTitle').innerText = "Run Ended";
       document.getElementById('multiplayerResults').classList.remove('hidden');
-      
-      // Update final score and status in Firebase
       if(window.dbUpdate && roomId && playerId){
-          window.dbUpdate(window.dbRef(window.db, `rooms/${roomId}/players/${playerId}`), {
+          window.dbUpdate(window.dbRef(window.db, `runs/${roomId}/players/${playerId}`), {
               score: score,
               isDead: true 
           });
       }
-      fetchLeaderboard(); // Start listening for leaderboard updates
+      fetchLeaderboard();
   } else {
       document.getElementById('gameOverTitle').innerText = "Game Over";
       document.getElementById('multiplayerResults').classList.add('hidden');
@@ -334,12 +322,11 @@ function gameOver(){
   gameOverScreen.classList.remove('hidden');
 }
 
-/* Game Loop */
 function gameLoop(){
   if(!gameRunning) return;
   ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
-
-  // grid
+  
+  // Draw Grid
   ctx.strokeStyle='rgba(0,255,157,0.06)'; ctx.lineWidth=1;
   for(let x=0;x<canvas.clientWidth;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.clientHeight);ctx.stroke();}
   for(let y=0;y<canvas.clientHeight;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.clientWidth,y);ctx.stroke();}
@@ -359,12 +346,11 @@ function gameLoop(){
     player.magnetTimer--;
     const magnetRange=450; const magnetPower=0.12; const curveAmplitude=8; const wobbleSpeed=0.16;
     for(let it of items){
-      if(it.type==='good'||it.type==='shield'){ // Magnet only attracts good/shield items
+      if(it.type==='good'||it.type==='shield'){
         const dx=player.x+player.width/2-it.x; const dy=player.y+player.height/2-it.y;
         const dist=Math.sqrt(dx*dx+dy*dy);
         if(dist<magnetRange){
-          it.x+=dx/magnetRange*magnetPower*dist*2;
-          it.y+=dy/magnetRange*magnetPower*dist*2;
+          it.x+=dx/magnetRange*magnetPower*dist*2; it.y+=dy/magnetRange*magnetPower*dist*2;
           it._curvePhase+=wobbleSpeed;
           const perpX=-dy/dist, perpY=dx/dist;
           const curve=Math.sin(it._curvePhase)*(curveAmplitude*(1-dist/magnetRange));
@@ -381,24 +367,17 @@ function gameLoop(){
       if(it.type==='good'){score+=10; playBeep(880); collected=true;}
       else if(it.type==='shield'){player.hasShield=true; player.shieldTimer=210; playBeep(440); collected=true;}
       else if(it.type==='magnet'){player.magnetTimer=520; playBeep(660); collected=true;}
-      else { // Bad item (Gas Fee)
+      else { 
         if(!player.hasShield){
           health--; updateHealthDisplay(); playBeep(220); 
           if(health<=0){items.splice(i,1); return gameOver();}
           collected=true;
         } else {
-            // Shield blocks the hit, but removes the shield
-            player.hasShield = false;
-            player.shieldTimer = 0;
-            shieldTimerEl.innerText='Shield: 0.0s';
-            playBeep(330);
-            collected=true;
+            player.hasShield = false; player.shieldTimer = 0; shieldTimerEl.innerText='Shield: 0.0s';
+            playBeep(330); collected=true;
         }
       }
-      
-      if(collected) {
-        items.splice(i,1); i--; continue;
-      }
+      if(collected) { items.splice(i,1); i--; continue; }
     }
     if(it.y>canvas.clientHeight+50){items.splice(i,1); i--;}
   }
@@ -406,11 +385,11 @@ function gameLoop(){
   drawPlayer();
   frames++; difficultyFactor+=0.0002;
   scoreEl.innerText=`Data: ${score}`;
-  if(isMultiplayer && frames % 60 === 0) syncScore(); // Sync score every second
+  if(isMultiplayer && frames % 60 === 0) syncScore();
   requestAnimationFrame(gameLoop);
 }
 
-// --- Multiplayer Logic Functions ---
+// --- Multiplayer Functions ---
 
 function getPlayerName(){
     let name = playerNameInput.value.trim();
@@ -418,10 +397,17 @@ function getPlayerName(){
     return name;
 }
 
+// ✅ FIXED: Create Lobby with Error Handling
 async function createLobby(){
-    if(joiningInProgress || !window.db) return;
-    joiningInProgress = true;
+    if(joiningInProgress) return;
     
+    // 1. Check if Firebase loaded
+    if(!window.db) {
+        alert("خطا: فایربیس لود نشده است. لطفاً اینترنت خود را چک کنید.");
+        return;
+    }
+
+    joiningInProgress = true;
     const btn = startMultiBtn;
     if(btn) { btn.disabled = true; btn.innerText = "Creating..."; }
     
@@ -431,19 +417,35 @@ async function createLobby(){
     isHost = true;
     isMultiplayer = true;
 
-    const roomRef = window.dbRef(window.db, `runs/${roomId}`);
-    await window.dbSet(roomRef, {
-        status: 'lobby',
-        players: {
-            [playerId]: { name: playerName, score: 0, isHost: true, isDead: false }
-        }
-    });
-    
-    showLobbyUI();
-    listenToLobby();
-    joiningInProgress = false;
+    try {
+        const roomRef = window.dbRef(window.db, `runs/${roomId}`);
+        // 2. Attempt to write to database
+        await window.dbSet(roomRef, {
+            status: 'lobby',
+            players: {
+                [playerId]: { name: playerName, score: 0, isHost: true, isDead: false }
+            }
+        });
+        
+        // Success
+        showLobbyUI();
+        listenToLobby();
+        joiningInProgress = false;
+
+    } catch (error) {
+        // 3. Error Handler
+        console.error("Firebase Error:", error);
+        let msg = "خطا در ساخت اتاق. ";
+        if(error.code === 'PERMISSION_DENIED') msg += "قوانین دیتابیس (Rules) بسته است.";
+        else msg += "کنسول را برای جزئیات چک کنید.";
+        
+        alert(msg);
+        joiningInProgress = false;
+        if(btn) { btn.disabled = false; btn.innerText = "PLAY WITH FRIENDS"; }
+    }
 }
 
+// ✅ FIXED: Join Lobby with Error Handling
 async function joinLobby(){
     if(joiningInProgress || !window.db) return;
     joiningInProgress = true;
@@ -453,7 +455,6 @@ async function joinLobby(){
     
     playerName = getPlayerName();
 
-    // Check Duplicate Name Logic (Same as previous game)
     try {
         const roomPlayersRef = window.dbRef(window.db, `runs/${roomId}/players`);
         const snapshot = await window.dbGet(roomPlayersRef);
@@ -463,30 +464,33 @@ async function joinLobby(){
             const isNameTaken = Object.values(players).some(p => p.name.toLowerCase() === playerName.toLowerCase());
 
             if (isNameTaken) {
-                alert("این نام کاربری قبلاً در این اتاق استفاده شده است. لطفاً نام دیگری انتخاب کنید.");
+                alert("این نام کاربری تکراری است!");
                 joiningInProgress = false;
                 if(btn) { btn.disabled = false; btn.innerText = "Join Lobby"; }
                 return;
             }
         }
-    } catch (error) {
-        console.error("Error checking names:", error);
-    }
-    
-    playerId = 'p_' + Date.now();
-    isHost = false;
-    isMultiplayer = true;
+        
+        playerId = 'p_' + Date.now();
+        isHost = false;
+        isMultiplayer = true;
 
-    const playerRef = window.dbRef(window.db, `runs/${roomId}/players/${playerId}`);
-    await window.dbSet(playerRef, {
-        name: playerName,
-        score: 0,
-        isHost: false,
-        isDead: false
-    });
-    
-    showLobbyUI();
-    listenToLobby();
+        const playerRef = window.dbRef(window.db, `runs/${roomId}/players/${playerId}`);
+        await window.dbSet(playerRef, {
+            name: playerName,
+            score: 0,
+            isHost: false,
+            isDead: false
+        });
+        
+        showLobbyUI();
+        listenToLobby();
+
+    } catch (error) {
+        console.error("Join Error:", error);
+        alert("خطا در پیوستن به اتاق. لطفا Rules فایربیس را چک کنید.");
+        if(btn) { btn.disabled = false; btn.innerText = "Join Lobby"; }
+    }
     joiningInProgress = false;
 }
 
@@ -509,8 +513,8 @@ function listenToLobby(){
     window.dbOnValue(roomRef, (snapshot) => {
         const data = snapshot.val();
         if(!data) {
-            if(!gameOverScreen.classList.contains('hidden')){ /* Allow clean exit after game over */ }
-            else { alert("Room closed by host"); location.href = window.location.pathname; }
+            if(!gameOverScreen.classList.contains('hidden')){ }
+            else { alert("اتاق بسته شد."); location.href = window.location.pathname; }
             return;
         }
         const list = document.getElementById('lobbyPlayerList');
@@ -522,7 +526,6 @@ function listenToLobby(){
                 list.appendChild(li);
             });
         }
-        // Start game if host changes status
         if(data.status === 'playing' && !gameRunning && health > 0){
             initGame();
         }
@@ -541,14 +544,12 @@ function syncScore(){
 
 function fetchLeaderboard(){
     const playersRef = window.dbRef(window.db, `runs/${roomId}/players`);
-    // Listen for score/status updates even after game ends
     window.dbOnValue(playersRef, (snapshot) => {
         const players = snapshot.val();
         const lb = document.getElementById('finalLeaderboard');
         lb.innerHTML = '';
         if(!players) return;
         
-        // Sort by score (highest first)
         const sorted = Object.values(players).sort((a,b) => b.score - a.score);
         
         sorted.forEach((p, index) => {
@@ -562,17 +563,12 @@ function fetchLeaderboard(){
             else rankDisplay = `<span class="rank-text">#${index+1}</span>`;
 
             let statusText = '';
-            if (p.isDead) {
-                statusText = '<span class="player-status-dead">Finished</span>';
-            } else {
-                statusText = '<span class="player-status-playing">Running...</span>';
-            }
+            if (p.isDead) statusText = '<span class="player-status-dead">Finished</span>';
+            else statusText = '<span class="player-status-playing">Running...</span>';
             
             div.innerHTML = `
                 <div style="display:flex; align-items:center;">
-                    ${rankDisplay} 
-                    <span>${p.name}</span>
-                    ${statusText} 
+                    ${rankDisplay} <span>${p.name}</span> ${statusText} 
                 </div>
                 <span class="lb-score">${p.score}</span>
             `;
@@ -585,39 +581,21 @@ window.copyLink = function(){
     const link = document.getElementById('shareLink').innerText;
     navigator.clipboard.writeText(link).then(() => alert("Link copied!"));
 }
-
 window.leaveLobby = function(){
-    if(isHost && roomId && window.db){
-         // Host clears the room upon leaving the lobby
-         window.dbRemove(window.dbRef(window.db, `runs/${roomId}`));
-    }
-    location.href = window.location.pathname; // Reload to main menu
+    if(isHost && roomId && window.db) window.dbRemove(window.dbRef(window.db, `runs/${roomId}`));
+    location.href = window.location.pathname;
 }
 
-// --- Event Listeners ---
-
-// Single Player Start
 startSoloBtn.onclick = () => { isMultiplayer=false; initGame(); };
-
-// Multiplayer Start / Join
 startMultiBtn.onclick = () => {
     if(joiningInProgress) return;
-    if(roomId) joinLobby(); // Join existing room from URL
-    else createLobby(); // Create new room
+    if(roomId) joinLobby();
+    else createLobby();
 };
-
-// Host Starts Match
 hostStartBtn.onclick = startMultiplayerGame;
+tryBtn.onclick = () => { location.href = window.location.pathname; };
 
-// Try Again / Main Menu
-tryBtn.onclick = () => {
-    // If multiplayer, host should decide if the room should be cleared
-    // For simplicity, we just reload the page to go back to the main menu/start screen
-    location.href = window.location.pathname;
-};
-
-
-/* Preload images */
+/* Preload Assets */
 function preloadImages(list){
   const results={};
   const promises=list.map(({name,src})=>new Promise(res=>{
@@ -628,14 +606,7 @@ function preloadImages(list){
   }));
   return Promise.all(promises).then(()=>results);
 }
-
-const assetsToLoad=[
-  {name:'logo',src:'logo.png'},
-  {name:'player1',src:'player1.png'},
-  {name:'player2',src:'player2.png'},
-  {name:'cry',src:'cry.png'}
-];
-
+const assetsToLoad=[{name:'logo',src:'logo.png'},{name:'player1',src:'player1.png'},{name:'player2',src:'player2.png'},{name:'cry',src:'cry.png'}];
 preloadImages(assetsToLoad).then(imgs=>{
   images=imgs;
   if(images.logo) document.getElementById('logo').src=images.logo.src;
